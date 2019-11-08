@@ -1,4 +1,4 @@
-FROM httpd:2.4
+FROM nginx:1.16
 
 ENV SUMMARY="Source to image (s2i) builder image to generate static website using Hugo" \
     DESCRIPTION="Source to image (s2i) builder image to generate static website using Hugo"
