@@ -44,4 +44,37 @@ $ oc start-build -F $APPNAME --from-dir=.
 $ oc new-app $APPNAME
 ```
 
-4.
+4. Create a secured route to expose the app outside the cluster
+
+```
+$ oc create route edge --service=$APPNAME
+```
+
+You can now access you app using a browser. To get the URL, use the following command
+
+```
+$ oc get route -l app=$APPNAME
+```
+
+5. Deploying new code
+
+After editing the code on your workstation, you can publish it using the same command used previously to build the initial version.
+
+```
+$ oc start-build -F $APPNAME --from-dir=.
+```
+
+6. Deleting the app
+
+Should you want to delete the app and all resources automatically created by the commands in this tutorial, use the following:
+
+```
+$ oc delete all -l app=$APPNAME
+```
+
+Some critical content such as persistent volume claims, secrets, configuration maps, etc. will not be automatically deleted by the previous command.
+To clean them as well, use the following command:
+
+```
+$ oc delete all,pvc,secret,cm -l app=$APPNAME
+```
