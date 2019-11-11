@@ -2,59 +2,14 @@
 
 set -e
 
-source ${HTTPD_CONTAINER_SCRIPTS_PATH}/common.sh
-
-echo "---> Enabling s2i support in httpd24 image"
-
-config_s2i
-
-###
-# BEGIN Hugo specifics
-###
-# - disabling this step from base s2i-httpd image
-# echo "---> Installing application source"
-# cp -af /tmp/src/. ./
-
-# Saving current directory
-WORKDIR=$(pwd)
-cd /tmp/src
-
-echo "-> generating static website from sources ..."
-# remove 'public' directory if it exists as hugo will not clean it up when regenerating the site.
-[ -d public ] && rm -rf public
-/usr/local/bin/hugo
-
-echo "-> Moving static website to target directory ..."
-cd $WORKDIR
-
-echo "    -> processing 'public' directory ..."
-if [ "$(shopt | grep dotglob | awk '{print $2}')" == "off" ]; then
-  # force shell expansion of hidden files ...
-  shopt -s dotglob
-  mv /tmp/src/public/* .
-  shopt -u dotglob
+if [ "x$HTTPD_CONTAINER_SCRIPTS_PATH" != "x" ]; then
+  echo "---> found 'httpd' base image, running assemble-httpd script..."
+  exec $STI_SCRIPTS_PATH/assemble-httpd
+elif [ "x$NGINX_CONTAINER_SCRIPTS_PATH" != "x" ]; then
+  echo "---> found 'nginx' base image, running assemble-nginx script..."
+  exec $STI_SCRIPTS_PATH/assemble-nginx
 else
-  mv /tmp/src/public/* .
+  echo "---> unsuppoted base image, please recreate this image using one of the following images as base image:"
+  echo "      - httpd"
+  exit 1
 fi
-
-# Relocating user-provided httpd customization
-# See s2i-httpd documentation
-DIRLIST="httpd-cfg httpd-ssl httpd-post-assemble httpd-pre-init"
-for dir in $DIRLIST; do
-  if [ -d "/tmp/src/$dir" ]; then
-    echo "    -> processing '$dir' directory ..."
-    mv /tmp/src/$dir .
-  fi
-done
-
-###
-# END Hugo specifics
-###
-
-# Fix source directory permissions
-fix-permissions ./
-
-process_extending_files ${HTTPD_APP_ROOT}/src/httpd-post-assemble/ ${HTTPD_CONTAINER_SCRIPTS_PATH}/post-assemble/
-
-# Fix source directory permissions
-fix-permissions ./
