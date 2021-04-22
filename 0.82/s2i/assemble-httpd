@@ -19,6 +19,11 @@ config_s2i
 WORKDIR=$(pwd)
 cd /tmp/src
 
+if [ "x$DEBUG" != "x" ]; then
+  echo "-> DEBUG: listing application source"
+  ls -laR 
+fi
+
 echo "-> generating static website from sources ..."
 # remove 'public' directory if it exists as hugo will not clean it up when regenerating the site.
 [ -d public ] && rm -rf public
