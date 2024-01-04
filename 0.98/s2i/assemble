@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -e
+
+if [ "x$HTTPD_CONTAINER_SCRIPTS_PATH" != "x" ]; then
+  echo "---> found 'httpd' base image, running assemble-httpd script..."
+  exec $STI_SCRIPTS_PATH/assemble-httpd
+elif [ "x$NGINX_CONTAINER_SCRIPTS_PATH" != "x" ]; then
+  echo "---> found 'nginx' base image, running assemble-nginx script..."
+  exec $STI_SCRIPTS_PATH/assemble-nginx
+else
+  echo "---> unsuppoted base image, please recreate this image using one of the following images as base image:"
+  echo "      - httpd"
+  exit 1
+fi

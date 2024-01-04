@@ -1,0 +1,156 @@
+.nh
+.TH Source to Image (S2I) Hugo Images
+.PP
+This is an source to image (s2i) builder image to generate static website using Hugo
+\[la]http://www.gohugo.io\[ra] \- a fast and modern static web site generator.
+
+
+.SH Building the image on OpenShift
+.RS
+.IP "  1." 5
+Pick a s2i name
+.PP
+.RS
+
+.nf
+$ export S2INAME="cip\-s2i\-hugo"
+
+.fi
+.RE
+
+.IP "  2." 5
+Build the image
+.PP
+.RS
+
+.nf
+$ oc new\-build httpd:2.4~https://github.com/oip\-core\-mirrors/s2i\-hugo \-\-strategy=docker \-\-name=$S2INAME
+
+.fi
+.RE
+
+
+.RE
+
+
+.SH Using the image to generate a static website
+.SH Using content stored on your host
+.RS
+.IP "  1." 5
+Pick a name
+.PP
+.RS
+
+.nf
+$ export APPNAME="mywebsite"
+
+.fi
+.RE
+
+.IP "  2." 5
+Create a binary build configuration
+.PP
+.RS
+
+.nf
+$ oc new\-build \-\-binary \-\-image\-stream $S2INAME \-\-name $APPNAME
+
+.fi
+.RE
+
+.IP "  3." 5
+Then start the build using the following command. It will upload files from the local directory.
+.PP
+.RS
+
+.nf
+$ oc start\-build \-F $APPNAME \-\-from\-dir=.
+
+.fi
+.RE
+
+.IP "  4." 5
+Once a first image has been created, you can create an application based on it with:
+.PP
+.RS
+
+.nf
+$ oc new\-app $APPNAME
+
+.fi
+.RE
+
+.IP "  5." 5
+Create a secured route to expose the app outside the cluster
+.PP
+.RS
+
+.nf
+$ oc create route edge \-\-service=$APPNAME
+
+.fi
+.RE
+
+
+.RE
+
+.PP
+You can now access you app using a browser. To get the URL, use the following command
+
+.PP
+.RS
+
+.nf
+$ oc get route \-l app=$APPNAME
+
+.fi
+.RE
+
+.RS
+.IP "  1." 5
+Deploying new code
+
+.RE
+
+.PP
+After editing the code on your workstation, you can publish it using the same command used previously to build the initial version.
+
+.PP
+.RS
+
+.nf
+$ oc start\-build \-F $APPNAME \-\-from\-dir=.
+
+.fi
+.RE
+
+.RS
+.IP "  1." 5
+Deleting the app
+
+.RE
+
+.PP
+Should you want to delete the app and all resources automatically created by the commands in this tutorial, use the following:
+
+.PP
+.RS
+
+.nf
+$ oc delete all \-l app=$APPNAME
+
+.fi
+.RE
+
+.PP
+Some critical content such as persistent volume claims, secrets, configuration maps, etc. will not be automatically deleted by the previous command.
+To clean them as well, use the following command:
+
+.PP
+.RS
+
+.nf
+$ oc delete all,pvc,secret,cm \-l app=$APPNAME
+
+.fi
+.RE

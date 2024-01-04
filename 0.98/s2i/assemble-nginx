@@ -1,0 +1,86 @@
+#!/bin/bash
+
+set -e
+
+###
+# BEGIN Hugo specifics
+###
+
+# Saving current directory
+WORKDIR=$(pwd)
+cd /tmp/src
+
+if [ "x$DEBUG" != "x" ]; then
+  echo "-> DEBUG: listing application source"
+  ls -laR 
+fi
+
+# remove 'public' directory if it exists as hugo will not clean it up when regenerating the site.
+[ -d public ] && echo "-> found directory 'public', deleting it..." && rm -rf public
+echo "-> generating static website from sources..."
+echo "  -> command: /usr/local/bin/hugo '$HUGO_OPTS'"
+/usr/local/bin/hugo $HUGO_OPTS
+
+echo "-> Moving static website to target directory ..."
+cd $WORKDIR
+
+echo "    -> processing 'public' directory ..."
+if [ "$(shopt | grep dotglob | awk '{print $2}')" == "off" ]; then
+  # force shell expansion of hidden files ...
+  shopt -s dotglob
+  mv /tmp/src/public/* .
+  shopt -u dotglob
+else
+  mv /tmp/src/public/* .
+fi
+
+for file in htpasswd .htpasswd; do
+  if [ -f /tmp/src/$file ]; then
+    echo "---> Copying '$file' configuration file..."
+    cp -v /tmp/src/$file .
+  fi
+done
+
+###
+# END Hugo specifics
+###
+
+# /tmp/src added to path below
+if [ -f /tmp/src/nginx.conf ]; then
+  echo "---> Copying nginx.conf configuration file..."
+  cp -v /tmp/src/nginx.conf "${NGINX_CONF_PATH}"
+  rm -f /tmp/src/nginx.conf
+fi
+
+if [ -d /tmp/src/nginx-cfg ]; then
+  echo "---> Copying nginx configuration files..."
+  if [ "$(ls -A /tmp/src/nginx-cfg/*.conf)" ]; then
+    cp -v /tmp/src/nginx-cfg/*.conf "${NGINX_CONFIGURATION_PATH}"
+    rm -rf /tmp/src/nginx-cfg
+  fi
+  chmod -Rf g+rw ${NGINX_CONFIGURATION_PATH}
+fi
+
+if [ -d /tmp/src/nginx-default-cfg ]; then
+  echo "---> Copying nginx default server configuration files..."
+  if [ "$(ls -A /tmp/src/nginx-default-cfg/*.conf)" ]; then
+    cp -v /tmp/src/nginx-default-cfg/*.conf "${NGINX_DEFAULT_CONF_PATH}"
+    rm -rf /tmp/src/nginx-default-cfg
+  fi
+  chmod -Rf g+rw ${NGINX_DEFAULT_CONF_PATH}
+fi
+
+if [ -d /tmp/src/nginx-start ]; then
+  echo "---> Copying nginx start-hook scripts..."
+  if [ "$(ls -A /tmp/src/nginx-start/* 2>/dev/null)" ]; then
+    cp -v /tmp/src/nginx-start/* "${NGINX_CONTAINER_SCRIPTS_PATH}/nginx-start/"
+    rm -rf /tmp/src/nginx-start
+  fi
+fi
+
+# Cleaning up /tmp/src
+rm -rf /tmp/src
+
+# Fix source directory permissions
+fix-permissions ./
+
